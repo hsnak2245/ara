@@ -3,135 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traffic Analysis</title>
+    <meta name="description" content="Traffic Intelligence Platform - Advanced Analytics & Predictive Insights">
+    <title>Modern Traffic Analytics</title>
+    
+    <!-- External Dependencies -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <link href="https://api.fontshare.com/v2/css?f[]=space-grotesk@400,500,600&display=swap" rel="stylesheet">
+    
     <style>
+        /* Custom Properties */
+        :root {
+            --primary: #22d3ee;
+            --secondary: #ec4899;
+            --background: #0f172a;
+        }
+        
+        /* Base Styles */
         body {
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: #0a0a0a;
-            color: #fafafa;
+            background-color: var(--background);
+            color: #f1f5f9;
+            font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
         }
+        
         .card {
-            background-color: #171717;
-            border: 1px solid #262626;
-            transition: all 0.2s ease;
+            background-color: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border-radius: 1rem;
             padding: 1.5rem;
-            border-radius: 0.75rem;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+        
         .card:hover {
-            border-color: #404040;
+            border-color: rgb(71, 85, 105);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(-2px);
         }
-        .chart-container {
-            width: 100%;
-            height: 400px;
+        
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
-        .text-gray-400 {
-            color: #9ca3af;
+        
+        .glow {
+            filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.3));
         }
-        .text-3xl {
-            font-size: 1.875rem;
-            line-height: 2.25rem;
+
+        /* Loading State */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--background);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
         }
-        .text-2xl {
-            font-size: 1.5rem;
-            line-height: 2rem;
-        }
-        .text-lg {
-            font-size: 1.125rem;
-            line-height: 1.75rem;
-        }
-        .font-medium {
-            font-weight: 500;
-        }
-        .mb-1 {
-            margin-bottom: 0.25rem;
-        }
-        .mb-4 {
-            margin-bottom: 1rem;
-        }
-        .mb-8 {
-            margin-bottom: 2rem;
-        }
-        .container {
-            max-width: 72rem;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1rem;
-            padding-right: 1rem;
+
+        /* Error State */
+        .error-message {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgb(239, 68, 68);
+            color: rgb(239, 68, 68);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
         }
     </style>
 </head>
-<body>
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-2xl font-medium mb-8">Traffic Analysis Dashboard</h1>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<body class="antialiased">
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+        <div class="text-xl font-semibold text-cyan-400">Loading...</div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="content" class="container mx-auto px-4 py-8" style="display: none;">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold mb-2 glow">Traffic Intelligence Platform</h1>
+            <p class="text-slate-400">Advanced Analytics & Predictive Insights</p>
+        </header>
+
+        <!-- Error Message Container -->
+        <div id="error-container" class="hidden"></div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="card">
-                <p class="text-sm text-gray-400 mb-1">Total Accidents</p>
-                <p class="text-3xl font-medium">{{ metrics['total_accidents'] | format_number }}</p>
+                <div class="text-slate-400 text-sm mb-2">Total Accidents</div>
+                <div id="total-accidents" class="metric-value">-</div>
             </div>
             <div class="card">
-                <p class="text-sm text-gray-400 mb-1">Active Licenses</p>
-                <p class="text-3xl font-medium">{{ metrics['total_licenses'] | format_number }}</p>
+                <div class="text-slate-400 text-sm mb-2">Average Age</div>
+                <div id="avg-age" class="metric-value">-</div>
             </div>
             <div class="card">
-                <p class="text-sm text-gray-400 mb-1">Registered Vehicles</p>
-                <p class="text-3xl font-medium">{{ metrics['total_vehicles'] | format_number }}</p>
+                <div class="text-slate-400 text-sm mb-2">Peak Hour</div>
+                <div id="peak-hour" class="metric-value">-</div>
+            </div>
+            <div class="card">
+                <div class="text-slate-400 text-sm mb-2">Active Vehicles</div>
+                <div id="vehicle-active" class="metric-value">-</div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Analytics Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div class="card">
-                <h2 class="text-lg font-medium mb-4">Yearly Accident Trends</h2>
-                <div id="accidents-trend" class="chart-container"></div>
+                <h3 class="text-xl font-semibold mb-4">Accident Trends & Forecast</h3>
+                <div id="accidents-trend" class="h-96"></div>
             </div>
             <div class="card">
-                <h2 class="text-lg font-medium mb-4">Nationality Distribution</h2>
-                <div id="nationality-distribution" class="chart-container"></div>
+                <h3 class="text-xl font-semibold mb-4">License Demographics</h3>
+                <div id="license-demographics" class="h-80"></div>
             </div>
         </div>
-        
-        <div class="card">
-            <h2 class="text-lg font-medium mb-4">Hourly Accident Distribution</h2>
-            <div id="hourly-pattern" class="chart-container"></div>
+
+        <!-- Demographics Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Age Distribution</h3>
+                <div id="age-distribution" class="h-80"></div>
+            </div>
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Hourly Accident Patterns</h3>
+                <div id="hourly-patterns" class="h-96"></div>
+            </div>
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Vehicle Age Analysis</h3>
+                <div id="vehicle-age" class="h-80"></div>
+            </div>
+        </div>
+
+        <!-- Additional Insights -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Day vs Night Distribution</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center">
+                        <div class="text-5xl font-bold text-cyan-400" id="day-accidents">-</div>
+                        <div class="text-sm text-slate-400 mt-2">Daytime Accidents</div>
+                        <div class="text-xs text-slate-500">(6:00 - 18:00)</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-5xl font-bold text-pink-400" id="night-accidents">-</div>
+                        <div class="text-sm text-slate-400 mt-2">Nighttime Accidents</div>
+                        <div class="text-xs text-slate-500">(18:00 - 6:00)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Vehicle Status Overview</h3>
+                <div id="vehicle-status" class="h-64"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Create the charts when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            const accidentsTrend = JSON.parse('{{ accidents_trend | safe }}');
-            const nationalityDist = JSON.parse('{{ nationality_dist | safe }}');
-            const hourlyPattern = JSON.parse('{{ hourly_pattern | safe }}');
-            
-            // Create the charts
-            Plotly.newPlot('accidents-trend', 
-                accidentsTrend.data, 
-                accidentsTrend.layout,
-                {responsive: true}
-            );
-            
-            Plotly.newPlot('nationality-distribution', 
-                nationalityDist.data, 
-                nationalityDist.layout,
-                {responsive: true}
-            );
-            
-            Plotly.newPlot('hourly-pattern', 
-                hourlyPattern.data, 
-                hourlyPattern.layout,
-                {responsive: true}
-            );
+        // Utility functions
+        const formatNumber = (num) => new Intl.NumberFormat().format(num);
+        const formatDecimal = (num) => Number(num).toFixed(1);
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/data');
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                // Update metrics
+                document.getElementById('total-accidents').textContent = formatNumber(data.metrics.total_accidents);
+                document.getElementById('avg-age').textContent = formatDecimal(data.metrics.avg_age);
+                document.getElementById('peak-hour').textContent = `${data.metrics.peak_hour}:00`;
+                document.getElementById('vehicle-active').textContent = formatNumber(data.metrics.vehicle_active);
+
+                // Initialize charts
+                const accidentsTrend = JSON.parse(data.accidents_trend);
+                Plotly.newPlot('accidents-trend', accidentsTrend.data, {
+                    ...accidentsTrend.layout,
+                    font: {family: 'Space Grotesk'},
+                    hoverlabel: {font: {family: 'Space Grotesk'}}
+                }, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+
+                // Hourly patterns chart
+                const hourlyData = data.analytics.hourly_patterns;
+                const hourlyLayout = {
+                    template: 'plotly_dark',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: {family: 'Space Grotesk', color: 'white'},
+                    xaxis: {
+                        title: 'Hour of Day',
+                        gridcolor: '#334155',
+                        tickmode: 'array',
+                        ticktext: hourlyData.hours.map(h => `${h}:00`),
+                        tickvals: hourlyData.hours
+                    },
+                    yaxis: {
+                        title: 'Number of Accidents',
+                        gridcolor: '#334155'
+                    },
+                    annotations: hourlyData.data_available ? [] : [{
+                        text: 'Hourly data not available',
+                        xref: 'paper',
+                        yref: 'paper',
+                        x: 0.5,
+                        y: 0.5,
+                        showarrow: false,
+                        font: {
+                            size: 16,
+                            color: '#94a3b8'
+                        }
+                    }]
+                };
+
+                Plotly.newPlot('hourly-patterns', [{
+                    x: hourlyData.hours,
+                    y: hourlyData.counts,
+                    type: 'bar',
+                    marker: {
+                        color: hourlyData.is_daylight.map(isDaylight => 
+                            isDaylight ? '#22d3ee' : '#ec4899'
+                        )
+                    },
+                    name: 'Accidents'
+                }], hourlyLayout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+
+                // Update day/night statistics
+                document.getElementById('day-accidents').textContent = formatNumber(hourlyData.day_accidents);
+                document.getElementById('night-accidents').textContent = formatNumber(hourlyData.night_accidents);
+
+                // License demographics
+                const licenseData = data.analytics.license_demographics;
+                
+                // Create two-column bar chart for nationality and license types
+                const nationalityData = Object.entries(licenseData.nationality);
+                const licenseTypesData = Object.entries(licenseData.license_types);
+                
+                Plotly.newPlot('license-demographics', [
+                    {
+                        type: 'bar',
+                        x: nationalityData.map(([group]) => group),
+                        y: nationalityData.map(([_, count]) => count),
+                        name: 'By Nationality',
+                        marker: { color: '#22d3ee' }
+                    },
+                    {
+                        type: 'bar',
+                        x: licenseTypesData.map(([type]) => type),
+                        y: licenseTypesData.map(([_, count]) => count),
+                        name: 'By License Type',
+                        marker: { color: '#ec4899' },
+                        visible: false
+                    }
+                ], {
+                    template: 'plotly_dark',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: {family: 'Space Grotesk', color: 'white'},
+                    margin: {t: 30, r: 20, b: 40, l: 60},
+                    xaxis: {
+                        title: '',
+                        gridcolor: '#334155',
+                        tickangle: 45
+                    },
+                    yaxis: {
+                        title: 'Number of License Holders',
+                        gridcolor: '#334155'
+                    },
+                    updatemenus: [{
+                        type: 'buttons',
+                        direction: 'right',
+                        x: 0.5,
+                        y: 1.1,
+                        xanchor: 'center',
+                        yanchor: 'top',
+                        buttons: [
+                            {
+                                args: [{'visible': [true, false]}],
+                                label: 'Nationality',
+                                method: 'restyle'
+                            },
+                            {
+                                args: [{'visible': [false, true]}],
+                                label: 'License Types',
+                                method: 'restyle'
+                            }
+                        ],
+                        font: {family: 'Space Grotesk'},
+                        bgcolor: '#1e293b',
+                        bordercolor: '#475569'
+                    }]
+                }, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+
+                // Vehicle status overview
+                const vehicleStatusData = Object.entries(data.analytics.vehicle_trends.status_breakdown);
+                Plotly.newPlot('vehicle-status', [{
+                    type: 'bar',
+                    x: vehicleStatusData.map(([status]) => status),
+                    y: vehicleStatusData.map(([_, count]) => count),
+                    marker: {
+                        color: vehicleStatusData.map((_, index) => 
+                            `rgba(34, 211, 238, ${1 - index * 0.2})`
+                        )
+                    }
+                }], {
+                    template: 'plotly_dark',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: {family: 'Space Grotesk', color: 'white'},
+                    margin: {t: 10, r: 10, b: 60, l: 60},
+                    xaxis: {
+                        title: 'Vehicle Status',
+                        gridcolor: '#334155',
+                        tickangle: 45
+                    },
+                    yaxis: {
+                        title: 'Number of Vehicles',
+                        gridcolor: '#334155'
+                    }
+                }, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+
+                // Vehicle age analysis
+                const vehicleAge = Object.entries(data.analytics.vehicle_trends.age_distribution);
+                Plotly.newPlot('vehicle-age', [{
+                    type: 'pie',
+                    labels: vehicleAge.map(([age]) => age),
+                    values: vehicleAge.map(([_, count]) => count),
+                    hole: 0.4,
+                    marker: {
+                        colors: ['#22d3ee', '#38bdf8', '#60a5fa', '#818cf8', '#ec4899']
+                    }
+                }], {
+                    template: 'plotly_dark',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: {family: 'Space Grotesk', color: 'white'},
+                    showlegend: true,
+                    legend: {orientation: 'h', y: -0.2}
+                }, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+
+                // Hide loading, show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Dashboard initialization error:', error);
+                const errorContainer = document.getElementById('error-container');
+                errorContainer.classList.remove('hidden');
+                errorContainer.classList.add('error-message');
+                errorContainer.textContent = 'Error loading dashboard data. Please try refreshing the page.';
+                document.getElementById('loading').style.display = 'none';
+            }
         });
 
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            Plotly.Plots.resize('accidents-trend');
-            Plotly.Plots.resize('nationality-distribution');
-            Plotly.Plots.resize('hourly-pattern');
+        // Responsive charts
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                try {
+                    const charts = ['accidents-trend', 'age-distribution', 'vehicle-status'];
+                    charts.forEach(chartId => {
+                        const chart = document.getElementById(chartId);
+                        if (chart && chart.data) {
+                            Plotly.Plots.resize(chart);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error resizing charts:', error);
+                }
+            }, 250);
+        });
+
+        // Error handling for Plotly
+        window.addEventListener('error', (event) => {
+            if (event.error.message.includes('Plotly')) {
+                console.error('Plotly error:', event.error);
+                const errorContainer = document.getElementById('error-container');
+                errorContainer.classList.remove('hidden');
+                errorContainer.classList.add('error-message');
+                errorContainer.textContent = 'Error displaying charts. Please try refreshing the page.';
+            }
         });
     </script>
 </body>
