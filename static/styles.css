@@ -1,0 +1,65 @@
+/* Custom Properties */
+:root {
+    --primary: #22d3ee;
+    --secondary: #ec4899;
+    --background: #0f172a;
+}
+
+/* Base Styles */
+body {
+    background-color: var(--background);
+    color: #f1f5f9;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+}
+
+.card {
+    background-color: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(12px);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    border-color: rgb(71, 85, 105);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+}
+
+.metric-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.glow {
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.3));
+}
+
+/* Loading State */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--background);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+}
+
+/* Error State */
+.error-message {
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgb(239, 68, 68);
+    color: rgb(239, 68, 68);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+}
